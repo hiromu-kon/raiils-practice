@@ -1,0 +1,43 @@
+version: '3'
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - '5432:5432'
+    container_name: friends-db
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+  api:
+    build: ./
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
+    container_name: friends-rails
+    volumes:
+      - ./:/friends/
+      - gem_data:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    stdin_open: true
+    tty: true
+
+  api-nginx:
+    build: ./nginx/
+    container_name: friends-rails-nginx
+    volumes:
+      - ./:/friends/
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  pg_data:
+  gem_data:
+    driver: local
